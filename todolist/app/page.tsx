@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // A simple type for our todo items
 type Todo = {
@@ -9,9 +9,34 @@ type Todo = {
   completed: boolean;
 };
 
+const TODO_APP_STORAGE_KEY = 'my-todolist-items';
+
 export default function Home() {
-  const [todos, setTodos] = useState<Todo[]>([]);
+  // Lazily initialize state from localStorage
+  const [todos, setTodos] = useState<Todo[]>(() => {
+    // This function only runs on the client, once
+    if (typeof window !== 'undefined') {
+      const savedTodos = localStorage.getItem(TODO_APP_STORAGE_KEY);
+      if (savedTodos) {
+        try {
+          return JSON.parse(savedTodos);
+        } catch (e) {
+          console.error("Failed to parse todos from localStorage", e);
+          return [];
+        }
+      }
+    }
+    return [];
+  });
+  
   const [newTodo, setNewTodo] = useState('');
+
+  // Effect to save todos to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(TODO_APP_STORAGE_KEY, JSON.stringify(todos));
+    }
+  }, [todos]);
 
   const handleAddTodo = () => {
     if (newTodo.trim() !== '') {
@@ -33,9 +58,9 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-24 bg-gray-100">
+    <main className="flex min-h-screen flex-col items-center p-24 bg-gray-100 dark:bg-gray-900">
       <div className="w-full max-w-2xl">
-        <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">My Todolist 🤓</h1>
+        <h1 className="text-4xl font-bold text-center mb-8 text-gray-800 dark:text-gray-100">My Todolist 🤓</h1>
         
         {/* Input and Add Button */}
         <div className="flex gap-4 mb-8">
@@ -45,7 +70,7 @@ export default function Home() {
             onChange={(e) => setNewTodo(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
             placeholder="What needs to be done?"
-            className="flex-grow p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-grow p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
           />
           <button
             onClick={handleAddTodo}
@@ -56,13 +81,13 @@ export default function Home() {
         </div>
 
         {/* Todo List */}
-        <div className="bg-white rounded-lg shadow-md">
-          <ul className="divide-y divide-gray-200">
+        <div className="bg-white rounded-lg shadow-md dark:bg-gray-800">
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {todos.length > 0 ? (
               todos.map(todo => (
                 <li key={todo.id} className="flex items-center justify-between p-4">
                   <span
-                    className={`flex-grow cursor-pointer ${todo.completed ? 'line-through text-gray-500' : 'text-gray-800'}`}
+                    className={`flex-grow cursor-pointer ${todo.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-100'}`}
                     onClick={() => handleToggleTodo(todo.id)}
                   >
                     {todo.text}
@@ -76,7 +101,7 @@ export default function Home() {
                 </li>
               ))
             ) : (
-              <p className="p-4 text-gray-500 text-center">No todos yet. Add one above!</p>
+              <p className="p-4 text-gray-500 text-center dark:text-gray-400">No todos yet. Add one above!</p>
             )}
           </ul>
         </div>
